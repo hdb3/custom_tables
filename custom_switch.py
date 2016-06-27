@@ -23,6 +23,7 @@ from ryu.lib.packet import ethernet
 from ryu.lib.packet import ether_types
 import ryu.app.ofctl.api
 from ryu.lib import ofctl_v1_3 as ofctl
+from pprint import pprint
 
 class SimpleSwitch13(app_manager.RyuApp):
     OFP_VERSIONS = [ofproto_v1_3.OFP_VERSION]
@@ -38,7 +39,8 @@ class SimpleSwitch13(app_manager.RyuApp):
         parser = datapath.ofproto_parser
 
         waiters = {}
-        ofctl.get_table_features(datapath,waiters)
+        table_features = ofctl.get_table_features(datapath,waiters)
+        pprint(table_features)
 
         # install table-miss flow entry
         #
