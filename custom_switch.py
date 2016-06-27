@@ -38,9 +38,14 @@ class SimpleSwitch13(app_manager.RyuApp):
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
 
-        waiters = {}
-        table_features = ofctl.get_table_features(datapath,waiters)
-        pprint(table_features)
+        # waiters = {}
+        # ofctl.get_table_features(datapath,waiters)
+        # table_features = ofctl.get_table_features(datapath,waiters)
+        # pprint(table_features)
+
+
+        req = parser.OFPTableStatsRequest(datapath, 0)
+        datapath.send_msg(req)
 
         # install table-miss flow entry
         #
@@ -54,6 +59,14 @@ class SimpleSwitch13(app_manager.RyuApp):
                                           ofproto.OFPCML_NO_BUFFER)]
         self.add_flow(datapath, 0, match, actions)
 
+    @set_ev_cls(ofp_event.EventOFPTableStatsReply, MAIN_DISPATCHER)
+    def table_stats_reply_handler(self, ev):
+        pprint(ev.msg.body)
+        tables = []
+        for stat in ev.msg.body:
+            tables.append('table_id=%d active_count=%d lookup_count=%d ' ' matched_count=%d' % (stat.table_id, stat.active_count,
+                                                                                                           stat.lookup_count, stat.matched_count))
+        self.logger.debug('TableStats: %s', tables)
 
     def add_flow(self, datapath, priority, match, actions, buffer_id=None):
         ofproto = datapath.ofproto
