@@ -40,7 +40,29 @@ oxm_ipv4_dst_masked = OFPOxmId(hasmask=1,length=4,type_='ipv4_dst')
 oxm_ipv6_src_masked = OFPOxmId(hasmask=1,length=16,type_='ipv6_src')
 oxm_ipv6_dst_masked = OFPOxmId(hasmask=1,length=16,type_='ipv6_dst')
 
-tcam_match_oxm_ids=[oxm_eth_dst_masked,oxm_eth_src_masked,oxm_vlan_vid,oxm_vlan_pcp,oxm_eth_type,oxm_ip_dscp,oxm_ip_proto,oxm_ipv4_src_masked,oxm_ipv4_dst_masked, \
+match_fields= [oxm_eth_src,oxm_vlan_vid]
+set_fields= [oxm_eth_dst,oxm_eth_src,oxm_vlan_vid,oxm_vlan_pcp]
+L2_match = [oxm_eth_dst,oxm_eth_src,oxm_vlan_vid]
+
+tcam_match=[
+    oxm_eth_dst_masked,
+    oxm_eth_src_masked,
+    #oxm_vlan_vid,
+    #oxm_vlan_pcp,
+    #oxm_eth_type,
+    #oxm_ip_dscp,
+    #oxm_ip_proto,
+    oxm_ipv4_src_masked,
+    oxm_ipv4_dst_masked,
+    #oxm_tcp_src,
+    #oxm_tcp_dst,
+    #oxm_udp_src,
+    #oxm_udp_dst,
+    #oxm_ipv6_src_masked,
+    #oxm_ipv6_dst_masked
+]
+
+_tcam_match=[oxm_eth_dst_masked,oxm_eth_src_masked,oxm_vlan_vid,oxm_vlan_pcp,oxm_eth_type,oxm_ip_dscp,oxm_ip_proto,oxm_ipv4_src_masked,oxm_ipv4_dst_masked, \
                     oxm_tcp_src,oxm_tcp_dst,oxm_udp_src,oxm_udp_dst,oxm_ipv6_src_masked,oxm_ipv6_dst_masked]
 
 def makeTable(max_entries,name,table_id,next_tables,match_fields,set_fields):

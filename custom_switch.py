@@ -25,7 +25,8 @@ from ryu.lib.packet import ether_types
 # from ryu.lib import ofctl_v1_3 as ofctl
 from ryu.ofproto.ofproto_v1_3_parser import OFPBarrierRequest as OFPB
 from pprint import pprint
-from table0 import table1
+# from table0 import table1
+from maketable import *
 
 class SimpleSwitch13(app_manager.RyuApp):
     OFP_VERSIONS = [ofproto_v1_3.OFP_VERSION]
@@ -39,22 +40,31 @@ class SimpleSwitch13(app_manager.RyuApp):
         datapath = ev.msg.datapath
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
+        table0 = makeTable( max_entries=8192, name='Custom Single Table 0', table_id=0, next_tables=[], \
+                            match_fields= [oxm_eth_src,oxm_vlan_vid], \
+                            set_fields= [oxm_eth_dst,oxm_eth_src,oxm_vlan_vid,oxm_vlan_pcp])
 
-        # waiters = {}
-        # ofctl.get_table_features(datapath,waiters)
-        # table_features = ofctl.get_table_features(datapath,waiters)
-        # pprint(table_features)
+        table_L2_0 = makeTable( max_entries=2048, name='Custom L2 Table 0', table_id=0, next_tables=[], \
+                            match_fields=L2_match, \
+                            set_fields=L2_match)
 
+        table_L2_1 = makeTable( max_entries=2048, name='Custom L2 Table 1', table_id=1, next_tables=[], \
+                            match_fields=L2_match, \
+                            set_fields=L2_match)
+
+        table2 = makeTable( max_entries=2016, name='Custom Table 2', table_id=2, next_tables=[], \
+                            match_fields= tcam_match, \
+                            set_fields= tcam_match)
 
         barrier_req = parser.OFPBarrierRequest(datapath)
         feature_req = parser.OFPTableFeaturesStatsRequest(datapath, 0)
-        feature_set = parser.OFPTableFeaturesStatsRequest(datapath, 0, body=[table1])
+        feature_set = parser.OFPTableFeaturesStatsRequest(datapath, 0, body=[table_L2_0, table_L2_1])
 
         # datapath.send_msg(barrier_req)
         # datapath.send_msg(feature_req)
         # datapath.send_msg(barrier_req)
         datapath.send_msg(feature_set)
-        datapath.send_msg(barrier_req)
+        # datapath.send_msg(barrier_req)
         datapath.send_msg(feature_req)
 
         # install table-miss flow entry
