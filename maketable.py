@@ -11,6 +11,15 @@ default_instruction_ids=[
 
 default_action_ids=[
   OFPActionId(len_=4,type_=0),
+  OFPActionId(len_=4,type_=17),
+  OFPActionId(len_=4,type_=18),
+  OFPActionId(len_=4,type_=22),
+  OFPActionId(len_=4,type_=23),
+  OFPActionId(len_=4,type_=25)
+]
+
+_default_action_ids=[
+  OFPActionId(len_=4,type_=0),
   # OFPActionId(len_=4,type_=17),
   # OFPActionId(len_=4,type_=18),
   OFPActionId(len_=4,type_=22),
@@ -50,6 +59,7 @@ set_fields= [oxm_eth_dst,oxm_eth_src,oxm_vlan_vid,oxm_vlan_pcp]
 L2_match = [oxm_eth_dst,oxm_eth_src,oxm_vlan_vid]
 
 tcam_match=[
+    oxm_in_port,
     oxm_eth_dst,
     oxm_eth_src,
     #oxm_eth_dst_masked,
@@ -71,10 +81,7 @@ tcam_match=[
     #oxm_ipv6_dst_masked
 ]
 
-_tcam_match=[oxm_eth_dst_masked,oxm_eth_src_masked,oxm_vlan_vid,oxm_vlan_pcp,oxm_eth_type,oxm_ip_dscp,oxm_ip_proto,oxm_ipv4_src_masked,oxm_ipv4_dst_masked, \
-                    oxm_tcp_src,oxm_tcp_dst,oxm_udp_src,oxm_udp_dst,oxm_ipv6_src_masked,oxm_ipv6_dst_masked]
-
-def makeTable(max_entries,name,table_id,next_tables,match_fields,set_fields):
+def makeTable(max_entries,name,table_id,next_tables,match_fields,set_fields,wild_fields=[]):
     return OFPTableFeaturesStats(
 
         config=3,
@@ -124,7 +131,7 @@ def makeTable(max_entries,name,table_id,next_tables,match_fields,set_fields):
           ),
           OFPTableFeaturePropOxm(
             type_=10,
-            oxm_ids=[],
+            oxm_ids=wild_fields,
           ),
           OFPTableFeaturePropOxm(
             type_=12,
@@ -144,3 +151,26 @@ def makeTable(max_entries,name,table_id,next_tables,match_fields,set_fields):
           )
         ]
       )
+
+# default pipelines
+
+default_0_match = [oxm_eth_src,oxm_vlan_vid]
+default_1_match = [oxm_eth_dst,oxm_vlan_vid]
+default_2_match = [oxm_eth_type,oxm_vlan_vid,oxm_ip_proto,oxm_ipv4_src,oxm_ipv4_dst,oxm_tcp_src,oxm_tcp_dst,oxm_udp_src,oxm_udp_dst,oxm_ipv6_src,oxm_ipv6_dst]
+default_3_match=[oxm_in_port,oxm_eth_dst_masked,oxm_eth_src_masked,oxm_eth_type,oxm_vlan_vid,oxm_vlan_pcp,oxm_ip_dscp,oxm_ip_proto,oxm_ipv4_src_masked,oxm_ipv4_dst_masked, \
+                    oxm_tcp_src,oxm_tcp_dst,oxm_udp_src,oxm_udp_dst,oxm_ipv6_src_masked,oxm_ipv6_dst_masked]
+
+default_3_wild=[oxm_in_port,oxm_eth_dst,oxm_eth_src,oxm_eth_type,oxm_vlan_vid,oxm_vlan_pcp,oxm_ip_dscp,oxm_ip_proto,oxm_ipv4_src_masked,oxm_ipv4_dst_masked, \
+                    oxm_tcp_src,oxm_tcp_dst,oxm_udp_src,oxm_udp_dst,oxm_ipv6_src,oxm_ipv6_dst]
+
+default_0_set = [oxm_eth_dst,oxm_eth_src,oxm_vlan_vid,oxm_vlan_pcp]
+default_1_set = default_0_set
+default_2_set = [oxm_eth_dst,oxm_eth_src,oxm_vlan_vid,oxm_vlan_pcp,oxm_ip_dscp,oxm_ipv4_src,oxm_ipv4_dst,oxm_tcp_src,oxm_tcp_dst,oxm_udp_src,oxm_udp_dst]
+default_3_set = default_2_set
+default_pipeline = [
+    makeTable(8192,"Custom L2 Src",0,[1,2,3],default_0_match,default_0_set),
+    makeTable(8192,"Custom L2 Dst",1,[2,3],default_1_match,default_1_set),
+    makeTable(8192,"Custom L3 Table",2,[3],default_2_match,default_2_set),
+    makeTable(2016,"Custom TCAM Table",3,[],default_3_match,default_3_set,default_3_wild)
+]
+
