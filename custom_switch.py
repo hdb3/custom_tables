@@ -21,9 +21,11 @@ from ryu.ofproto import ofproto_v1_3
 from ryu.lib.packet import packet
 from ryu.lib.packet import ethernet
 from ryu.lib.packet import ether_types
-import ryu.app.ofctl.api
-from ryu.lib import ofctl_v1_3 as ofctl
+# import ryu.app.ofctl.api
+# from ryu.lib import ofctl_v1_3 as ofctl
+from ryu.ofproto.ofproto_v1_3_parser import OFPBarrierRequest as OFPB
 from pprint import pprint
+from table0 import table0
 
 class SimpleSwitch13(app_manager.RyuApp):
     OFP_VERSIONS = [ofproto_v1_3.OFP_VERSION]
@@ -44,8 +46,16 @@ class SimpleSwitch13(app_manager.RyuApp):
         # pprint(table_features)
 
 
-        req = parser.OFPTableStatsRequest(datapath, 0)
-        datapath.send_msg(req)
+        barrier_req = parser.OFPBarrierRequest(datapath)
+        feature_req = parser.OFPTableFeaturesStatsRequest(datapath, 0)
+        feature_set = parser.OFPTableFeaturesStatsRequest(datapath, 0, body=[table0])
+
+        datapath.send_msg(barrier_req)
+        datapath.send_msg(feature_req)
+        datapath.send_msg(barrier_req)
+        datapath.send_msg(feature_set)
+        datapath.send_msg(barrier_req)
+        datapath.send_msg(feature_req)
 
         # install table-miss flow entry
         #
@@ -59,14 +69,16 @@ class SimpleSwitch13(app_manager.RyuApp):
                                           ofproto.OFPCML_NO_BUFFER)]
         self.add_flow(datapath, 0, match, actions)
 
-    @set_ev_cls(ofp_event.EventOFPTableStatsReply, MAIN_DISPATCHER)
+    # @set_ev_cls(ofp_event.EventOFPTableStatsReply, MAIN_DISPATCHER)
+    @set_ev_cls(ofp_event.EventOFPTableFeaturesStatsReply, MAIN_DISPATCHER)
     def table_stats_reply_handler(self, ev):
-        pprint(ev.msg.body)
-        tables = []
-        for stat in ev.msg.body:
-            tables.append('table_id=%d active_count=%d lookup_count=%d ' ' matched_count=%d' % (stat.table_id, stat.active_count,
-                                                                                                           stat.lookup_count, stat.matched_count))
-        self.logger.debug('TableStats: %s', tables)
+        print "received table features response...."
+        # pprint(ev.msg.body)
+        # tables = []
+        # for stat in ev.msg.body:
+            # tables.append('table_id=%d active_count=%d lookup_count=%d ' ' matched_count=%d' % (stat.table_id, stat.active_count,
+                                                                                                           # stat.lookup_count, stat.matched_count))
+        # self.logger.debug('TableStats: %s', tables)
 
     def add_flow(self, datapath, priority, match, actions, buffer_id=None):
         ofproto = datapath.ofproto

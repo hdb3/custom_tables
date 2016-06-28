@@ -1,0 +1,16 @@
+The table features req/resp is a list of OFPTableFeaturesStats objects.
+Each OFPTableFeaturesStats object has the following simple properties:config,length,max_entries,metadata_match,metadata_write,name,table_id.
+It also has the complex member properties which is a heterogeneous list containing at most one each of 16 different objects.
+These 16 objects are uniquely identified by a type ID (0..15), but are represented by a smaller number of object classes:
+ * OFPTableFeaturePropInstructions (type 0,1)
+   member 'instruction_ids'  contains [OFPInstructionId]
+ * OFPTableFeaturePropNextTables (type 2,3)
+   member 'table_ids' contains integers
+ * OFPTableFeaturePropActions (type 4-7)
+   member action_ids contains [OFPActionId]
+ * OFPTableFeaturePropOxm (type 8,10,12,13,14,15)
+   member oxm_ids contains [OFPOxmId]
+
+Sources
+  ryu/ryu/ofproto/ofproto_v1_3_parser.py
+  ryu/ryu/ofproto/ofproto_v1_3.py
