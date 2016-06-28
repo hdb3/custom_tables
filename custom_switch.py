@@ -25,7 +25,7 @@ from ryu.lib.packet import ether_types
 # from ryu.lib import ofctl_v1_3 as ofctl
 from ryu.ofproto.ofproto_v1_3_parser import OFPBarrierRequest as OFPB
 from pprint import pprint
-from table0 import table0
+from table0 import table1
 
 class SimpleSwitch13(app_manager.RyuApp):
     OFP_VERSIONS = [ofproto_v1_3.OFP_VERSION]
@@ -48,11 +48,11 @@ class SimpleSwitch13(app_manager.RyuApp):
 
         barrier_req = parser.OFPBarrierRequest(datapath)
         feature_req = parser.OFPTableFeaturesStatsRequest(datapath, 0)
-        feature_set = parser.OFPTableFeaturesStatsRequest(datapath, 0, body=[table0])
+        feature_set = parser.OFPTableFeaturesStatsRequest(datapath, 0, body=[table1])
 
-        datapath.send_msg(barrier_req)
-        datapath.send_msg(feature_req)
-        datapath.send_msg(barrier_req)
+        # datapath.send_msg(barrier_req)
+        # datapath.send_msg(feature_req)
+        # datapath.send_msg(barrier_req)
         datapath.send_msg(feature_set)
         datapath.send_msg(barrier_req)
         datapath.send_msg(feature_req)
