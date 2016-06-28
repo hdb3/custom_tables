@@ -31,7 +31,6 @@ oxm_vlan_pcp = OFPOxmId(hasmask=0,length=1,type_='vlan_pcp')
 
 table0 = OFPTableFeaturesStats(
   config=3,
-  # length=376,
   max_entries=8192,
   metadata_match=0,
   metadata_write=0,
@@ -43,7 +42,6 @@ table0 = OFPTableFeaturesStats(
 
 table1 = OFPTableFeaturesStats(
   config=3,
-  # length=376,
   max_entries=8192,
   metadata_match=0,
   metadata_write=0,
@@ -53,72 +51,58 @@ table1 = OFPTableFeaturesStats(
     OFPTableFeaturePropInstructions(
       type_=0,
       instruction_ids=default_instruction_ids,
-      length=24
     ),
     OFPTableFeaturePropInstructions(
       type_=1,
       instruction_ids=default_instruction_ids,
-      length=24
     ),
 #    OFPTableFeaturePropNextTables(
 #      type_=2,
 #      table_ids=[1, 2, 3],
-#      length=7
 #    ),
 #    OFPTableFeaturePropNextTables(
 #      type_=3,
 #      table_ids=[1, 2, 3],
-#      length=7
 #    ),
     OFPTableFeaturePropActions(
       type_=4,
       action_ids=default_action_ids,
-      # length=28
     ),
     OFPTableFeaturePropActions(
       type_=5,
       action_ids=default_action_ids,
-#      length=28
     ),
     OFPTableFeaturePropActions(
       type_=6,
       action_ids=default_action_ids,
-#      length=28
     ),
     OFPTableFeaturePropActions(
       type_=7,
       action_ids=default_action_ids,
-#      length=28
     ),
     OFPTableFeaturePropOxm(
       type_=8,
       oxm_ids=[oxm_eth_src,oxm_vlan_vid],
-      length=12
     ),
 #    OFPTableFeaturePropOxm(
 #      type_=10,
 #      oxm_ids=[],
-#      length=4
 #    ),
     OFPTableFeaturePropOxm(
       type_=12,
       oxm_ids=[oxm_eth_dst,oxm_eth_src,oxm_vlan_vid,oxm_vlan_pcp],
-      length=20
 #    ),
 #    OFPTableFeaturePropOxm(
 #      type_=13,
 #      oxm_ids=[oxm_eth_dst,oxm_eth_src,oxm_vlan_vid,oxm_vlan_pcp],
-#      length=20
 #    ),
 #    OFPTableFeaturePropOxm(
 #      type_=14,
 #      oxm_ids=[oxm_eth_dst,oxm_eth_src,oxm_vlan_vid,oxm_vlan_pcp],
-#      length=20
 #    ),
 #    OFPTableFeaturePropOxm(
 #      type_=15,
 #      oxm_ids=[oxm_eth_dst,oxm_eth_src,oxm_vlan_vid,oxm_vlan_pcp],
-#      length=20
     )
   ]
 )
