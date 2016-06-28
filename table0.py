@@ -8,12 +8,19 @@ default_instruction_ids=[
   OFPInstructionId(len_=4,type_=5),
   OFPInstructionId(len_=4,type_=6)
 ]
-default_action_ids=[
+
+_default_action_ids=[
   OFPActionId(len_=4,type_=0),
   OFPActionId(len_=4,type_=17),
   OFPActionId(len_=4,type_=18),
   OFPActionId(len_=4,type_=22),
   OFPActionId(len_=4,type_=23),
+  OFPActionId(len_=4,type_=25)
+]
+
+
+default_action_ids=[
+  OFPActionId(len_=4,type_=0),
   OFPActionId(len_=4,type_=25)
 ]
 
@@ -43,16 +50,16 @@ table1 = OFPTableFeaturesStats(
   name='Custom Single Table',
   table_id=0,
   properties=[
-#    OFPTableFeaturePropInstructions(
-#      type_=0,
-#      instruction_ids=default_instruction_ids,
-#      length=24
-#    ),
-#    OFPTableFeaturePropInstructions(
-#      type_=1,
-#      instruction_ids=default_instruction_ids,
-#      length=24
-#    ),
+    OFPTableFeaturePropInstructions(
+      type_=0,
+      instruction_ids=default_instruction_ids,
+      length=24
+    ),
+    OFPTableFeaturePropInstructions(
+      type_=1,
+      instruction_ids=default_instruction_ids,
+      length=24
+    ),
 #    OFPTableFeaturePropNextTables(
 #      type_=2,
 #      table_ids=[1, 2, 3],
@@ -63,26 +70,26 @@ table1 = OFPTableFeaturesStats(
 #      table_ids=[1, 2, 3],
 #      length=7
 #    ),
-#    OFPTableFeaturePropActions(
-#      type_=4,
-#      action_ids=default_action_ids,
+    OFPTableFeaturePropActions(
+      type_=4,
+      action_ids=default_action_ids,
+      # length=28
+    ),
+    OFPTableFeaturePropActions(
+      type_=5,
+      action_ids=default_action_ids,
 #      length=28
-#    ),
-#    OFPTableFeaturePropActions(
-#      type_=5,
-#      action_ids=default_action_ids,
+    ),
+    OFPTableFeaturePropActions(
+      type_=6,
+      action_ids=default_action_ids,
 #      length=28
-#    ),
-#    OFPTableFeaturePropActions(
-#      type_=6,
-#      action_ids=default_action_ids,
+    ),
+    OFPTableFeaturePropActions(
+      type_=7,
+      action_ids=default_action_ids,
 #      length=28
-#    ),
-#    OFPTableFeaturePropActions(
-#      type_=7,
-#      action_ids=default_action_ids,
-#      length=28
-#    ),
+    ),
     OFPTableFeaturePropOxm(
       type_=8,
       oxm_ids=[oxm_eth_src,oxm_vlan_vid],
