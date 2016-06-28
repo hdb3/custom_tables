@@ -44,7 +44,7 @@ class SimpleSwitch13(app_manager.RyuApp):
                             match_fields= [oxm_eth_src,oxm_vlan_vid], \
                             set_fields= [oxm_eth_dst,oxm_eth_src,oxm_vlan_vid,oxm_vlan_pcp])
 
-        table_L2_0 = makeTable( max_entries=2048, name='Custom L2 Table 0', table_id=0, next_tables=[], \
+        table_L2_0 = makeTable( max_entries=2048, name='Custom L2 Table 0', table_id=0, next_tables=[1], \
                             match_fields=L2_match, \
                             set_fields=L2_match)
 
@@ -52,13 +52,14 @@ class SimpleSwitch13(app_manager.RyuApp):
                             match_fields=L2_match, \
                             set_fields=L2_match)
 
-        table2 = makeTable( max_entries=2016, name='Custom Table 2', table_id=2, next_tables=[], \
+        table_L3 = makeTable( max_entries=2016, name='Custom Table 2', table_id=0, next_tables=[], \
                             match_fields= tcam_match, \
                             set_fields= tcam_match)
 
         barrier_req = parser.OFPBarrierRequest(datapath)
         feature_req = parser.OFPTableFeaturesStatsRequest(datapath, 0)
-        feature_set = parser.OFPTableFeaturesStatsRequest(datapath, 0, body=[table_L2_0, table_L2_1])
+        # feature_set = parser.OFPTableFeaturesStatsRequest(datapath, 0, body=[table_L2_0, table_L2_1])
+        feature_set = parser.OFPTableFeaturesStatsRequest(datapath, 0, body=[table_L3])
 
         # datapath.send_msg(barrier_req)
         # datapath.send_msg(feature_req)

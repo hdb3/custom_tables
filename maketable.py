@@ -82,15 +82,17 @@ def makeTable(max_entries,name,table_id,next_tables,match_fields,set_fields):
           OFPTableFeaturePropInstructions(
             type_=1,
             instruction_ids=default_instruction_ids,
-          ),
-      #    OFPTableFeaturePropNextTables(
-      #      type_=2,
-      #      table_ids=[1, 2, 3],
-      #    ),
-      #    OFPTableFeaturePropNextTables(
-      #      type_=3,
-      #      table_ids=[1, 2, 3],
-      #    ),
+          )] + (
+            [
+             OFPTableFeaturePropNextTables(
+               type_=2,
+               table_ids=next_tables,
+             ),
+             OFPTableFeaturePropNextTables(
+            type_=3,
+            table_ids=next_tables,
+             )
+          ] if next_tables else [] ) + [
           OFPTableFeaturePropActions(
             type_=4,
             action_ids=default_action_ids,
