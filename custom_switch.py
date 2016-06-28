@@ -52,7 +52,7 @@ class SimpleSwitch13(app_manager.RyuApp):
                             match_fields=L2_match, \
                             set_fields=L2_match)
 
-        table_L3 = makeTable( max_entries=2016, name='Custom Table 2', table_id=0, next_tables=[], \
+        table_L3 = makeTable( max_entries=512, name='Custom Table 2', table_id=0, next_tables=[], \
                             match_fields= tcam_match, \
                             set_fields= tcam_match)
 

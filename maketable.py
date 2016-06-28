@@ -28,6 +28,11 @@ oxm_eth_type = OFPOxmId(hasmask=0,length=2,type_='eth_type')
 oxm_ip_dscp = OFPOxmId(hasmask=0,length=1,type_='ip_dscp')
 oxm_ip_proto = OFPOxmId(hasmask=0,length=1,type_='ip_proto')
 
+oxm_ipv4_src = OFPOxmId(hasmask=0,length=4,type_='ipv4_src')
+oxm_ipv4_dst = OFPOxmId(hasmask=0,length=4,type_='ipv4_dst')
+oxm_ipv6_src = OFPOxmId(hasmask=0,length=16,type_='ipv6_src')
+oxm_ipv6_dst = OFPOxmId(hasmask=0,length=16,type_='ipv6_dst')
+
 oxm_tcp_src = OFPOxmId(hasmask=0,length=2,type_='tcp_src')
 oxm_tcp_dst = OFPOxmId(hasmask=0,length=2,type_='tcp_dst')
 oxm_udp_src = OFPOxmId(hasmask=0,length=2,type_='udp_src')
@@ -45,15 +50,19 @@ set_fields= [oxm_eth_dst,oxm_eth_src,oxm_vlan_vid,oxm_vlan_pcp]
 L2_match = [oxm_eth_dst,oxm_eth_src,oxm_vlan_vid]
 
 tcam_match=[
-    oxm_eth_dst_masked,
-    oxm_eth_src_masked,
+    oxm_eth_dst,
+    oxm_eth_src,
+    #oxm_eth_dst_masked,
+    #oxm_eth_src_masked,
     #oxm_vlan_vid,
     #oxm_vlan_pcp,
     #oxm_eth_type,
     #oxm_ip_dscp,
     #oxm_ip_proto,
-    oxm_ipv4_src_masked,
-    oxm_ipv4_dst_masked,
+    oxm_ipv4_src,
+    oxm_ipv4_dst,
+    #oxm_ipv4_src_masked,
+    #oxm_ipv4_dst_masked,
     #oxm_tcp_src,
     #oxm_tcp_dst,
     #oxm_udp_src,
