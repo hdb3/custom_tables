@@ -18,7 +18,7 @@ default_action_ids=[
   OFPActionId(len_=4,type_=25)
 ]
 
-_default_action_ids=[
+valid_action_ids=[
   OFPActionId(len_=4,type_=0),
   # OFPActionId(len_=4,type_=17),
   # OFPActionId(len_=4,type_=18),
@@ -81,7 +81,7 @@ tcam_match=[
     #oxm_ipv6_dst_masked
 ]
 
-def makeTable(max_entries,name,table_id,next_tables,match_fields,set_fields,wild_fields=[]):
+def makeTable(max_entries,name,table_id,next_tables,match_fields,set_fields,wild_fields=[],action_ids=valid_action_ids):
     return OFPTableFeaturesStats(
 
         config=3,
@@ -111,19 +111,19 @@ def makeTable(max_entries,name,table_id,next_tables,match_fields,set_fields,wild
           ] if next_tables else [] ) + [
           OFPTableFeaturePropActions(
             type_=4,
-            action_ids=default_action_ids,
+            action_ids=action_ids,
           ),
           OFPTableFeaturePropActions(
             type_=5,
-            action_ids=default_action_ids,
+            action_ids=action_ids,
           ),
           OFPTableFeaturePropActions(
             type_=6,
-            action_ids=default_action_ids,
+            action_ids=action_ids,
           ),
           OFPTableFeaturePropActions(
             type_=7,
-            action_ids=default_action_ids,
+            action_ids=action_ids,
           ),
           OFPTableFeaturePropOxm(
             type_=8,
@@ -167,6 +167,14 @@ default_0_set = [oxm_eth_dst,oxm_eth_src,oxm_vlan_vid,oxm_vlan_pcp]
 default_1_set = default_0_set
 default_2_set = [oxm_eth_dst,oxm_eth_src,oxm_vlan_vid,oxm_vlan_pcp,oxm_ip_dscp,oxm_ipv4_src,oxm_ipv4_dst,oxm_tcp_src,oxm_tcp_dst,oxm_udp_src,oxm_udp_dst]
 default_3_set = default_2_set
+
+fudge_pipeline = [
+    makeTable(8192,"Custom L2 Src",0,[1,2,3],default_0_match,default_0_set),
+    makeTable(8192,"Custom L2 Dst",1,[2,3],default_1_match,default_1_set),
+    makeTable(8192,"Custom L3 Table",2,[3],default_2_match,default_2_set),
+    makeTable(8192,"Custom L3 Table 2",3,[],default_2_match,default_2_set)
+]
+
 default_pipeline = [
     makeTable(8192,"Custom L2 Src",0,[1,2,3],default_0_match,default_0_set),
     makeTable(8192,"Custom L2 Dst",1,[2,3],default_1_match,default_1_set),
@@ -174,3 +182,28 @@ default_pipeline = [
     makeTable(2016,"Custom TCAM Table",3,[],default_3_match,default_3_set,default_3_wild)
 ]
 
+default_pipeline_table_0_1 = [
+    makeTable(8192,"Custom L2 Src",0,[1],default_0_match,default_0_set),
+    makeTable(8192,"Custom L2 Dst",1,[],default_1_match,default_1_set),
+]
+
+default_pipeline_table_0_2 = [
+    makeTable(8192,"Custom L2 Src",0,[1,2],default_0_match,default_0_set),
+    makeTable(8192,"Custom L2 Dst",1,[2],default_1_match,default_1_set),
+    makeTable(8192,"Custom L3 Table",2,[],default_2_match,default_2_set),
+]
+
+default_pipeline_table_0 = [
+    makeTable(8192,"Custom L2 Src",0,[],default_0_match,default_0_set),
+]
+
+default_pipeline_default_action_ids = [
+    makeTable(8192,"Custom L2 Src",0,[1,2,3],default_0_match,default_0_set,[],default_action_ids),
+    makeTable(8192,"Custom L2 Dst",1,[2,3],default_1_match,default_1_set,[],default_action_ids),
+    makeTable(8192,"Custom L3 Table",2,[3],default_2_match,default_2_set,[],default_action_ids),
+    makeTable(2016,"Custom TCAM Table",3,[],default_3_match,default_3_set,default_3_wild,default_action_ids)
+]
+
+default_pipeline_default_action_ids_table_0 = [
+    makeTable(8192,"Custom L2 Src",0,[],default_0_match,default_0_set,[],default_action_ids),
+]

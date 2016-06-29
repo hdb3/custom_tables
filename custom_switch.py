@@ -64,7 +64,7 @@ class SimpleSwitch13(app_manager.RyuApp):
         feature_req = parser.OFPTableFeaturesStatsRequest(datapath, 0)
         # feature_set = parser.OFPTableFeaturesStatsRequest(datapath, 0, body=[table_L2_0, table_L2_1])
         #feature_set = parser.OFPTableFeaturesStatsRequest(datapath, 0, body=[table_L3])
-        feature_set = parser.OFPTableFeaturesStatsRequest(datapath, 0, body=default_pipeline)
+        feature_set = parser.OFPTableFeaturesStatsRequest(datapath, 0, body=fudge_pipeline)
         # feature_set = parser.OFPTableFeaturesStatsRequest(datapath, 0, body=[table_L3])
 
         # datapath.send_msg(barrier_req)
