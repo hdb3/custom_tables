@@ -34,46 +34,58 @@ class SimpleSwitch13(app_manager.RyuApp):
     def __init__(self, *args, **kwargs):
         super(SimpleSwitch13, self).__init__(*args, **kwargs)
         self.mac_to_port = {}
+        self.request_generators = {}
+
+    def request_generator(self,datapath):
+        parser = datapath.ofproto_parser
+        feature_req = parser.OFPTableFeaturesStatsRequest(datapath, 0)
+        barrier_req = parser.OFPBarrierRequest(datapath)
+
+        print "send table feature request"
+        datapath.send_msg(feature_req)
+        datapath.send_msg(barrier_req)
+        yield
+        print "send table feature reconfiguration 1"
+        feature_set = parser.OFPTableFeaturesStatsRequest(datapath, 0, body=default_pipeline_table_0)
+        datapath.send_msg(feature_set)
+        datapath.send_msg(barrier_req)
+        yield
+        print "send table feature reconfiguration 2"
+        feature_set = parser.OFPTableFeaturesStatsRequest(datapath, 0, body=default_pipeline_default_action_ids_table_0)
+        datapath.send_msg(feature_set)
+        datapath.send_msg(barrier_req)
+        yield
+        print "send table feature reconfiguration 3"
+        feature_set = parser.OFPTableFeaturesStatsRequest(datapath, 0, body=fudge_pipeline)
+        datapath.send_msg(feature_set)
+        datapath.send_msg(barrier_req)
+        yield
+        print "send table feature reconfiguration 4"
+        feature_set = parser.OFPTableFeaturesStatsRequest(datapath, 0, body=default_pipeline)
+        datapath.send_msg(feature_set)
+        datapath.send_msg(barrier_req)
+        yield
+        print "send table feature request again"
+        datapath.send_msg(feature_req)
+        datapath.send_msg(barrier_req)
+        yield
+        print "*** end of request sequence ***"
+        yield
+
+    @set_ev_cls(ofp_event.EventOFPBarrierReply, MAIN_DISPATCHER)
+    def barrier_reply_handler(self, ev):
+        datapath = ev.msg.datapath
+        # self.logger.debug('OFPBarrierReply received')
+        next(self.request_generators[datapath])
 
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
     def switch_features_handler(self, ev):
         datapath = ev.msg.datapath
+        self.request_generators[datapath] = self.request_generator(datapath)
+        next(self.request_generators[datapath])
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
-        table0 = makeTable( max_entries=8192, name='Custom Single Table 0', table_id=0, next_tables=[], \
-                            match_fields= [oxm_eth_src,oxm_vlan_vid], \
-                            set_fields= [oxm_eth_dst,oxm_eth_src,oxm_vlan_vid,oxm_vlan_pcp])
 
-        table_L2   = makeTable( max_entries=2048, name='Single Custom L2 Table', table_id=0, next_tables=[], \
-                            match_fields=L2_match, \
-                            set_fields=L2_match)
-
-        table_L2_0 = makeTable( max_entries=2048, name='Custom L2 Table 0', table_id=0, next_tables=[1], \
-                            match_fields=L2_match, \
-                            set_fields=L2_match)
-
-        table_L2_1 = makeTable( max_entries=2048, name='Custom L2 Table 1', table_id=1, next_tables=[], \
-                            match_fields=L2_match, \
-                            set_fields=L2_match)
-
-        table_L3 = makeTable( max_entries=512, name='Single Custom L3 Table', table_id=0, next_tables=[], \
-                            match_fields= tcam_match, \
-                            set_fields= tcam_match)
-
-        barrier_req = parser.OFPBarrierRequest(datapath)
-        feature_req = parser.OFPTableFeaturesStatsRequest(datapath, 0)
-        # feature_set = parser.OFPTableFeaturesStatsRequest(datapath, 0, body=[table_L2_0, table_L2_1])
-        #feature_set = parser.OFPTableFeaturesStatsRequest(datapath, 0, body=[table_L3])
-        feature_set = parser.OFPTableFeaturesStatsRequest(datapath, 0, body=fudge_pipeline)
-        # feature_set = parser.OFPTableFeaturesStatsRequest(datapath, 0, body=[table_L3])
-
-        # datapath.send_msg(barrier_req)
-        # datapath.send_msg(feature_req)
-        # datapath.send_msg(barrier_req)
-        datapath.send_msg(feature_req)
-        datapath.send_msg(feature_set)
-        # datapath.send_msg(barrier_req)
-        datapath.send_msg(feature_req)
 
         # install table-miss flow entry
         #
@@ -87,7 +99,6 @@ class SimpleSwitch13(app_manager.RyuApp):
                                           ofproto.OFPCML_NO_BUFFER)]
         self.add_flow(datapath, 0, match, actions)
 
-    # @set_ev_cls(ofp_event.EventOFPTableStatsReply, MAIN_DISPATCHER)
     @set_ev_cls(ofp_event.EventOFPTableFeaturesStatsReply, MAIN_DISPATCHER)
     def table_stats_reply_handler(self, ev):
         print "received table features response...."
