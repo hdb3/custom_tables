@@ -21,11 +21,7 @@ from ryu.ofproto import ofproto_v1_3
 from ryu.lib.packet import packet
 from ryu.lib.packet import ethernet
 from ryu.lib.packet import ether_types
-# import ryu.app.ofctl.api
-# from ryu.lib import ofctl_v1_3 as ofctl
 from ryu.ofproto.ofproto_v1_3_parser import OFPBarrierRequest as OFPB
-from pprint import pprint
-# from table0 import table1
 from maketable import *
 
 class SimpleSwitch13(app_manager.RyuApp):
@@ -75,7 +71,6 @@ class SimpleSwitch13(app_manager.RyuApp):
     @set_ev_cls(ofp_event.EventOFPBarrierReply, MAIN_DISPATCHER)
     def barrier_reply_handler(self, ev):
         datapath = ev.msg.datapath
-        # self.logger.debug('OFPBarrierReply received')
         next(self.request_generators[datapath])
 
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
@@ -102,7 +97,6 @@ class SimpleSwitch13(app_manager.RyuApp):
     @set_ev_cls(ofp_event.EventOFPTableFeaturesStatsReply, MAIN_DISPATCHER)
     def table_stats_reply_handler(self, ev):
         print "received table features response...."
-        # pprint(ev.msg.body)
         for table in ev.msg.body:
             print "table: name=%s id=%d size=%d" % (table.name, table.table_id,table.max_entries)
 
