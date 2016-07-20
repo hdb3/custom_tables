@@ -20,8 +20,8 @@ default_action_ids=[
 
 valid_action_ids=[
   OFPActionId(len_=4,type_=0),
-  # OFPActionId(len_=4,type_=17),
-  # OFPActionId(len_=4,type_=18),
+  OFPActionId(len_=4,type_=17),
+  OFPActionId(len_=4,type_=18),
   OFPActionId(len_=4,type_=22),
   OFPActionId(len_=4,type_=23),
   OFPActionId(len_=4,type_=25)
@@ -60,25 +60,21 @@ L2_match = [oxm_eth_dst,oxm_eth_src,oxm_vlan_vid]
 
 tcam_match=[
     oxm_in_port,
-    oxm_eth_dst,
-    oxm_eth_src,
-    #oxm_eth_dst_masked,
-    #oxm_eth_src_masked,
-    #oxm_vlan_vid,
-    #oxm_vlan_pcp,
-    #oxm_eth_type,
-    #oxm_ip_dscp,
-    #oxm_ip_proto,
-    oxm_ipv4_src,
-    oxm_ipv4_dst,
-    #oxm_ipv4_src_masked,
-    #oxm_ipv4_dst_masked,
-    #oxm_tcp_src,
-    #oxm_tcp_dst,
-    #oxm_udp_src,
-    #oxm_udp_dst,
-    #oxm_ipv6_src_masked,
-    #oxm_ipv6_dst_masked
+    oxm_eth_dst_masked,
+    oxm_eth_src_masked,
+    oxm_vlan_vid,
+    oxm_vlan_pcp,
+    oxm_eth_type,
+    oxm_ip_dscp,
+    oxm_ip_proto,
+    oxm_ipv4_src_masked,
+    oxm_ipv4_dst_masked,
+    oxm_tcp_src,
+    oxm_tcp_dst,
+    oxm_udp_src,
+    oxm_udp_dst,
+    oxm_ipv6_src_masked,
+    oxm_ipv6_dst_masked
 ]
 
 def makeTable(max_entries,name,table_id,next_tables,match_fields,set_fields,wild_fields=[],action_ids=valid_action_ids):
@@ -167,6 +163,23 @@ default_0_set = [oxm_eth_dst,oxm_eth_src,oxm_vlan_vid,oxm_vlan_pcp]
 default_1_set = default_0_set
 default_2_set = [oxm_eth_dst,oxm_eth_src,oxm_vlan_vid,oxm_vlan_pcp,oxm_ip_dscp,oxm_ipv4_src,oxm_ipv4_dst,oxm_tcp_src,oxm_tcp_dst,oxm_udp_src,oxm_udp_dst]
 default_3_set = default_2_set
+
+# simple pipelines
+
+l2_match = [oxm_in_port,oxm_eth_type,oxm_vlan_vid,oxm_vlan_pcp,oxm_eth_dst,oxm_eth_src]
+l3_match = [oxm_in_port,oxm_eth_type,oxm_ip_proto,oxm_ipv4_src,oxm_ipv4_dst]
+l4_match = [oxm_in_port,oxm_eth_type,oxm_ip_proto,oxm_ipv4_src,oxm_ipv4_dst,oxm_tcp_src,oxm_tcp_dst,oxm_udp_src,oxm_udp_dst]
+l2_l3_set = l2_match + l3_match
+l2_l3_l4_set = l2_match + l3_match + l4_match
+
+
+simple_pipeline = [
+    makeTable(8192,"Simple L2 Src",0,[1,2],l2_match,l2_l3_set),
+    makeTable(8192,"Simple L3 Dst",1,[2],l3_match,l2_l3_set),
+    makeTable(8192,"Simple L4 Table",2,[],l4_match,l2_l3_l4_set)
+]
+empty_pipeline = [
+]
 
 fudge_pipeline = [
     makeTable(8192,"Custom L2 Src",0,[1,2,3],default_0_match,default_0_set),

@@ -23,6 +23,7 @@ from ryu.lib.packet import ethernet
 from ryu.lib.packet import ether_types
 from ryu.ofproto.ofproto_v1_3_parser import OFPBarrierRequest as OFPB
 from maketable import *
+from pprint import pprint
 
 class SimpleSwitch13(app_manager.RyuApp):
     OFP_VERSIONS = [ofproto_v1_3.OFP_VERSION]
@@ -33,6 +34,26 @@ class SimpleSwitch13(app_manager.RyuApp):
         self.request_generators = {}
 
     def request_generator(self,datapath):
+        
+        datapath.name = ""
+        if (datapath.id == 0x000b70106f911380):
+          datapath.name = "dp11"
+          # datapath.pipeline = simple_pipeline
+          # datapath.pipeline = empty_pipeline
+          datapath.pipeline = default_pipeline_table_0
+          # datapath.pipeline = fudge_pipeline
+          # datapath.pipeline = default_pipeline
+        elif (datapath.id == 0x000c70106f911380):
+          datapath.name = "dp12"
+          datapath.pipeline = default_pipeline_table_0
+        else:
+          datapath.pipeline = empty_pipeline
+
+        if (datapath.name):
+          print "configuring datapath: '%s'" % datapath.name
+        else:
+          print "configuring datapath: '%016x'/'%016x'" % (datapath.id,datapath.xid)
+
         parser = datapath.ofproto_parser
         feature_req = parser.OFPTableFeaturesStatsRequest(datapath, 0)
         barrier_req = parser.OFPBarrierRequest(datapath)
@@ -41,23 +62,8 @@ class SimpleSwitch13(app_manager.RyuApp):
         datapath.send_msg(feature_req)
         datapath.send_msg(barrier_req)
         yield
-        print "send table feature reconfiguration 1"
-        feature_set = parser.OFPTableFeaturesStatsRequest(datapath, 0, body=default_pipeline_table_0)
-        datapath.send_msg(feature_set)
-        datapath.send_msg(barrier_req)
-        yield
-        print "send table feature reconfiguration 2"
-        feature_set = parser.OFPTableFeaturesStatsRequest(datapath, 0, body=default_pipeline_default_action_ids_table_0)
-        datapath.send_msg(feature_set)
-        datapath.send_msg(barrier_req)
-        yield
-        print "send table feature reconfiguration 3"
-        feature_set = parser.OFPTableFeaturesStatsRequest(datapath, 0, body=fudge_pipeline)
-        datapath.send_msg(feature_set)
-        datapath.send_msg(barrier_req)
-        yield
-        print "send table feature reconfiguration 4"
-        feature_set = parser.OFPTableFeaturesStatsRequest(datapath, 0, body=default_pipeline)
+        print "send table feature reconfiguration"
+        feature_set = parser.OFPTableFeaturesStatsRequest(datapath, 0, body=datapath.pipeline)
         datapath.send_msg(feature_set)
         datapath.send_msg(barrier_req)
         yield
