@@ -35,7 +35,15 @@ class SimpleSwitch13(app_manager.RyuApp):
         self.barrier_req_xid  = {}
 
     def request_generator(self,datapath):
+
+        def table_feature_parser(msgs):
+            for msg in msgs:
+                for table in msg.body:
+                    print "table: name=%s id=%d size=%d" % (table.name, table.table_id,table.max_entries)
         
+        def feature_set(pipeline):
+            return self.parser.OFPTableFeaturesStatsRequest(datapath, 0, body=pipeline)
+
         datapath.name = ""
         if (datapath.id == 0x000b70106f911380):
           datapath.name = "dp11"
@@ -55,25 +63,22 @@ class SimpleSwitch13(app_manager.RyuApp):
         else:
           print "configuring datapath: '%016x'/'%016x'" % (datapath.id,datapath.xid)
 
-        feature_set = self.parser.OFPTableFeaturesStatsRequest(datapath, 0, body=datapath.pipeline)
-
         print "send table feature request"
-        res = yield(self.feature_req)
-        for msg in res:
-            for table in msg.body:
-                print "table: name=%s id=%d size=%d" % (table.name, table.table_id,table.max_entries)
+        table_feature_parser((yield self.feature_req))
 
-        print "send table feature reconfiguration"
-        res = yield(feature_set)
-        for msg in res:
-            for table in msg.body:
-                print "table: name=%s id=%d size=%d" % (table.name, table.table_id,table.max_entries)
+        for features in [default_pipeline,default_pipeline_table_0,fudge_pipeline,empty_pipeline,simple_pipeline]:
+            print "send table feature reconfiguration"
+            table_feature_parser((yield(feature_set(features))))
+
+
+        # print "send table feature reconfiguration #1"
+        # table_feature_parser((yield(feature_set(default_pipeline_table_0))))
+
+        # print "send table feature reconfiguration #2"
+        # table_feature_parser((yield(feature_set(default_pipeline))))
 
         print "send table feature request again"
-        res = yield(self.feature_req)
-        for msg in res:
-            for table in msg.body:
-                print "table: name=%s id=%d size=%d" % (table.name, table.table_id,table.max_entries)
+        table_feature_parser((yield self.feature_req))
 
         print "*** end of request sequence ***"
         yield
