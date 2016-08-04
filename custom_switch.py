@@ -18,11 +18,9 @@ from ryu.controller import ofp_event
 from ryu.controller.handler import CONFIG_DISPATCHER, MAIN_DISPATCHER
 from ryu.controller.handler import set_ev_cls
 from ryu.ofproto import ofproto_v1_3
-from ryu.lib.packet import packet
-from ryu.lib.packet import ethernet
-from ryu.lib.packet import ether_types
+from ryu.lib.packet import ethernet, arp, packet, ether_types
 from ryu.ofproto.ofproto_v1_3_parser import OFPBarrierRequest as OFPB
-from maketable import *
+from ryu.ofproto import ether
 from pprint import pprint
 
 class SimpleSwitch13(app_manager.RyuApp):
@@ -35,40 +33,33 @@ class SimpleSwitch13(app_manager.RyuApp):
 
     def request_generator(self,datapath):
         
-        datapath.name = ""
-        if (datapath.id == 0x000b70106f911380):
-          datapath.name = "dp11"
-          # datapath.pipeline = simple_pipeline
-          # datapath.pipeline = empty_pipeline
-          datapath.pipeline = default_pipeline_table_0
-          # datapath.pipeline = fudge_pipeline
-          # datapath.pipeline = default_pipeline
-        elif (datapath.id == 0x000c70106f911380):
-          datapath.name = "dp12"
-          datapath.pipeline = default_pipeline_table_0
-        else:
-          datapath.pipeline = empty_pipeline
-
-        if (datapath.name):
-          print "configuring datapath: '%s'" % datapath.name
-        else:
-          print "configuring datapath: '%016x'/'%016x'" % (datapath.id,datapath.xid)
-
         parser = datapath.ofproto_parser
-        feature_req = parser.OFPTableFeaturesStatsRequest(datapath, 0)
         barrier_req = parser.OFPBarrierRequest(datapath)
 
-        print "send table feature request"
-        datapath.send_msg(feature_req)
+        e = ethernet.ethernet(dst='ff:ff:ff:ff:ff:ff',
+                              src='08:60:6e:7f:74:e7',
+                              ethertype=ether.ETH_TYPE_ARP)
+        a = arp.arp(hwtype=1, proto=0x0800, hlen=6, plen=4, opcode=2,
+                    src_mac='08:60:6e:7f:74:e7', src_ip='192.0.2.1',
+                    dst_mac='00:00:00:00:00:00', dst_ip='192.0.2.2')
+        p = packet.Packet()
+        p.add_protocol(e)
+        p.add_protocol(a)
+        p.serialize()
+        msg1=p.data
+
+        actions = [parser.OFPActionOutput(1, 0)]
+        send_data_req = parser.OFPPacketOut(datapath, buffer_id=0xffffffff, in_port=datapath.ofproto.OFPP_CONTROLLER, actions=actions, data=p.data)
+
+        print "send empty request"
         datapath.send_msg(barrier_req)
         yield
-        print "send table feature reconfiguration"
-        feature_set = parser.OFPTableFeaturesStatsRequest(datapath, 0, body=datapath.pipeline)
-        datapath.send_msg(feature_set)
+        print "send 1st datamsg"
+        datapath.send_msg(send_data_req)
         datapath.send_msg(barrier_req)
         yield
-        print "send table feature request again"
-        datapath.send_msg(feature_req)
+        print "send 2nd datamsg"
+        datapath.send_msg(send_data_req)
         datapath.send_msg(barrier_req)
         yield
         print "*** end of request sequence ***"
@@ -82,23 +73,28 @@ class SimpleSwitch13(app_manager.RyuApp):
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
     def switch_features_handler(self, ev):
         datapath = ev.msg.datapath
-        self.request_generators[datapath] = self.request_generator(datapath)
-        next(self.request_generators[datapath])
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
+        if (datapath.id == 1):
+            print "configuring traffic datapath"
+            match = parser.OFPMatch()
+            actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER, ofproto.OFPCML_NO_BUFFER)]
+            self.add_flow(datapath, match, actions)
+            self.request_generators[datapath] = self.request_generator(datapath)
+            next(self.request_generators[datapath])
+        elif (datapath.id == 2):
+            print "configuring switch datapath"
+            match = parser.OFPMatch(in_port=1)
+            actions = [parser.OFPActionOutput(2)]
+            self.add_flow(datapath, match, actions)
+
+            match = parser.OFPMatch(in_port=2)
+            actions = [parser.OFPActionOutput(1)]
+            self.add_flow(datapath, match, actions)
+        else:
+            print "**NOT configuring unknown datapath: '%s'" % datapath.id
 
 
-        # install table-miss flow entry
-        #
-        # We specify NO BUFFER to max_len of the output action due to
-        # OVS bug. At this moment, if we specify a lesser number, e.g.,
-        # 128, OVS will send Packet-In with invalid buffer_id and
-        # truncated packet data. In that case, we cannot output packets
-        # correctly.  The bug has been fixed in OVS v2.1.0.
-        match = parser.OFPMatch()
-        actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER,
-                                          ofproto.OFPCML_NO_BUFFER)]
-        self.add_flow(datapath, 0, match, actions)
 
     @set_ev_cls(ofp_event.EventOFPTableFeaturesStatsReply, MAIN_DISPATCHER)
     def table_stats_reply_handler(self, ev):
@@ -106,18 +102,13 @@ class SimpleSwitch13(app_manager.RyuApp):
         for table in ev.msg.body:
             print "table: name=%s id=%d size=%d" % (table.name, table.table_id,table.max_entries)
 
-    def add_flow(self, datapath, priority, match, actions, buffer_id=None):
+    def add_flow(self, datapath, match, actions):
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
 
         inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS,
                                              actions)]
-        if buffer_id:
-            mod = parser.OFPFlowMod(datapath=datapath, buffer_id=buffer_id,
-                                    priority=priority, match=match,
-                                    instructions=inst)
-        else:
-            mod = parser.OFPFlowMod(datapath=datapath, priority=priority,
+        mod = parser.OFPFlowMod(datapath=datapath, priority=0,
                                     match=match, instructions=inst)
         datapath.send_msg(mod)
 
@@ -137,9 +128,6 @@ class SimpleSwitch13(app_manager.RyuApp):
         pkt = packet.Packet(msg.data)
         eth = pkt.get_protocols(ethernet.ethernet)[0]
 
-        if eth.ethertype == ether_types.ETH_TYPE_LLDP:
-            # ignore lldp packet
-            return
         dst = eth.dst
         src = eth.src
 
@@ -147,31 +135,3 @@ class SimpleSwitch13(app_manager.RyuApp):
         self.mac_to_port.setdefault(dpid, {})
 
         self.logger.info("packet in %s %s %s %s", dpid, src, dst, in_port)
-
-        # learn a mac address to avoid FLOOD next time.
-        self.mac_to_port[dpid][src] = in_port
-
-        if dst in self.mac_to_port[dpid]:
-            out_port = self.mac_to_port[dpid][dst]
-        else:
-            out_port = ofproto.OFPP_FLOOD
-
-        actions = [parser.OFPActionOutput(out_port)]
-
-        # install a flow to avoid packet_in next time
-        if out_port != ofproto.OFPP_FLOOD:
-            match = parser.OFPMatch(in_port=in_port, eth_dst=dst)
-            # verify if we have a valid buffer_id, if yes avoid to send both
-            # flow_mod & packet_out
-            if msg.buffer_id != ofproto.OFP_NO_BUFFER:
-                self.add_flow(datapath, 1, match, actions, msg.buffer_id)
-                return
-            else:
-                self.add_flow(datapath, 1, match, actions)
-        data = None
-        if msg.buffer_id == ofproto.OFP_NO_BUFFER:
-            data = msg.data
-
-        out = parser.OFPPacketOut(datapath=datapath, buffer_id=msg.buffer_id,
-                                  in_port=in_port, actions=actions, data=data)
-        datapath.send_msg(out)
