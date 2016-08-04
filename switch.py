@@ -15,13 +15,13 @@
 
 from ryu.base import app_manager
 from ryu.controller import ofp_event
-from ryu.controller.handler import CONFIG_DISPATCHER, MAIN_DISPATCHER
+from ryu.controller.handler import HANDSHAKE_DISPATCHER, CONFIG_DISPATCHER, MAIN_DISPATCHER
 from ryu.controller.handler import set_ev_cls
 from ryu.ofproto import ofproto_v1_3
 from ryu.lib.packet import packet
 from ryu.lib.packet import ethernet
 from ryu.lib.packet import ether_types
-#from ryu.ofproto.ofproto_v1_3_parser import OFPBarrierRequest as OFPB
+from ryu import utils
 from maketable import *
 from pprint import pprint
 
@@ -38,8 +38,20 @@ class SimpleSwitch13(app_manager.RyuApp):
 
         def table_feature_parser(msgs):
             for msg in msgs:
-                for table in msg.body:
-                    print "table: name=%s id=%d size=%d" % (table.name, table.table_id,table.max_entries)
+                if (type(msg) == self.parser.OFPErrorMsg):
+                    print 'OFPErrorMsg received: type=0x%02x code=0x%02x' % (msg.type, msg.code )
+                    # print 'OFPErrorMsg received: type=0x%02x code=0x%02x message=%s' % (msg.type, msg.code, utils.hex_array(msg.data))
+                    # self.logger.debug('OFPErrorMsg received: type=0x%02x code=0x%02x message=%s', ev.msg.type, ev.msg.code, utils.hex_array(ev.msg.data))
+                    return (False,'OFPErrorMsg received: type=0x%02x code=0x%02x' % (msg.type, msg.code ))
+                elif (type(msg) == self.parser.OFPTableFeaturesStatsReply):
+                    s = []
+                    for table in msg.body:
+                        s.append("table: name=%s id=%d size=%d" % (table.name, table.table_id,table.max_entries))
+                    return (True,('\n').join(s))
+                else:
+                    pprint(msg)
+                    print(type(msg))
+                    return (False, "unexpected message type received")
         
         def feature_set(pipeline):
             return self.parser.OFPTableFeaturesStatsRequest(datapath, 0, body=pipeline)
@@ -64,11 +76,13 @@ class SimpleSwitch13(app_manager.RyuApp):
           print "configuring datapath: '%016x'/'%016x'" % (datapath.id,datapath.xid)
 
         print "send table feature request"
-        table_feature_parser((yield self.feature_req))
+        print table_feature_parser((yield self.feature_req))[1]
 
         for features in [default_pipeline,default_pipeline_table_0,fudge_pipeline,empty_pipeline,simple_pipeline]:
-            print "send table feature reconfiguration"
-            table_feature_parser((yield(feature_set(features))))
+            # print "send table feature reconfiguration"
+            (status,message) = table_feature_parser((yield(feature_set(features))))
+            if (not status):
+                print "failed to set table features", message
 
 
         # print "send table feature reconfiguration #1"
@@ -124,6 +138,14 @@ class SimpleSwitch13(app_manager.RyuApp):
     @set_ev_cls(ofp_event.EventOFPTableFeaturesStatsReply, MAIN_DISPATCHER)
     def table_stats_reply_handler(self, ev):
         print "received table features response...."
+        datapath = ev.msg.datapath
+        self.reply_queues[datapath].append(ev.msg)
+        print "appending response for datapath %s",datapath.name
+
+    @set_ev_cls(ofp_event.EventOFPErrorMsg,
+                [HANDSHAKE_DISPATCHER, CONFIG_DISPATCHER, MAIN_DISPATCHER])
+    def error_msg_handler(self, ev):
+        print "received error response...."
         datapath = ev.msg.datapath
         self.reply_queues[datapath].append(ev.msg)
         print "appending response for datapath %s",datapath.name
