@@ -1,0 +1,34 @@
+#!/usr/bin/expect
+set timeout 9
+
+set hostname [lindex $argv 0]
+set filename [lindex $argv 1]
+#log_user 0
+
+if {[llength $argv] == 0} {
+  send_user "Usage: scriptname hostname filename\n"
+  exit 1
+}
+
+set f [open $filename]
+set config [split [read $f] "\n"]
+close $f
+
+spawn ssh $hostname
+expect "Press any key to continue"
+send " "
+expect "# "
+send "config\r"
+expect "(config)#"
+# Iterate over the config
+foreach line $config {
+    send "$line\r"
+    expect "# "
+}
+send "save\r"
+expect "#"
+send "logout\r"
+expect "Do you want to log out (y/n)?"
+send "y"
+expect eof
+close

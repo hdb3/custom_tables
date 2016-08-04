@@ -1,0 +1,51 @@
+openflow
+   controller-id 2 ip 10.30.65.204 controller-interface vlan 1
+   instance "dp11"
+      member vlan 11
+      controller-id 2
+      version 1.3 only
+      pipeline-model custom
+      enable
+   exit
+   instance "dp12"
+      member vlan 12
+      controller-id 2
+      version 1.3 only
+      pipeline-model custom
+      enable
+   exit
+   instance "dp13"
+      member vlan 13
+      controller-id 2
+      version 1.3 only
+      pipeline-model custom
+      enable
+   exit
+   instance "dp14"
+      member vlan 14
+      controller-id 2
+      version 1.3 only
+      pipeline-model custom
+      enable
+   exit
+exit
+vlan 11
+   name "VLAN11"
+   untagged 25-30
+   no ip address
+exit
+vlan 12
+   name "VLAN12"
+   untagged 31-36
+   no ip address
+exit
+vlan 13
+   name "VLAN13"
+   untagged 37-42
+   no ip address
+exit
+vlan 14
+   name "VLAN14"
+   untagged 43-48
+   no ip address
+exit

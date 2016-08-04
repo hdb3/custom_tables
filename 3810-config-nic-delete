@@ -1,0 +1,11 @@
+openflow
+   no instance "dp11"
+   no instance "dp12"
+   no instance "dp13"
+   no instance "dp14"
+   no controller-id 2
+exit
+no vlan 11
+no vlan 12
+no vlan 13
+no vlan 14
