@@ -40,8 +40,6 @@ class SimpleSwitch13(app_manager.RyuApp):
             for msg in msgs:
                 if (type(msg) == self.parser.OFPErrorMsg):
                     print 'OFPErrorMsg received: type=0x%02x code=0x%02x' % (msg.type, msg.code )
-                    # print 'OFPErrorMsg received: type=0x%02x code=0x%02x message=%s' % (msg.type, msg.code, utils.hex_array(msg.data))
-                    # self.logger.debug('OFPErrorMsg received: type=0x%02x code=0x%02x message=%s', ev.msg.type, ev.msg.code, utils.hex_array(ev.msg.data))
                     return (False,'OFPErrorMsg received: type=0x%02x code=0x%02x' % (msg.type, msg.code ))
                 elif (type(msg) == self.parser.OFPTableFeaturesStatsReply):
                     s = []
@@ -56,39 +54,39 @@ class SimpleSwitch13(app_manager.RyuApp):
         def feature_set(pipeline):
             return self.parser.OFPTableFeaturesStatsRequest(datapath, 0, body=pipeline)
 
-        datapath.name = ""
+        def run_default(datapath):
+            print "configuring datapath: '%s'" % datapath.name
+            print "send table feature request"
+            print table_feature_parser((yield self.feature_req))[1]
+            yield
+
+        def run_3810(datapath,features):
+            print "configuring datapath: '%s'" % datapath.name
+            print "send table feature request"
+            print table_feature_parser((yield self.feature_req))[1]
+
+            for feature in features:
+                (status,message) = table_feature_parser((yield(feature_set(feature))))
+                if (not status):
+                    print "failed to set table features", message
+
+            print "send table feature request again"
+            print table_feature_parser((yield self.feature_req))[1]
+
+            print "*** end of request sequence (%s)***" % datapath.name
+            yield
+
+        datapath.name = "unknown"
         if (datapath.id == 0x000b70106f911380):
-          datapath.name = "dp11"
-          # datapath.pipeline = simple_pipeline
-          # datapath.pipeline = empty_pipeline
-          datapath.pipeline = default_pipeline_table_0
-          # datapath.pipeline = fudge_pipeline
-          # datapath.pipeline = default_pipeline
+            datapath.name = "dp11"
+            return run_3810(datapath,[default_pipeline,default_pipeline_table_0,fudge_pipeline,empty_pipeline,simple_pipeline])
         elif (datapath.id == 0x000c70106f911380):
-          datapath.name = "dp12"
-          datapath.pipeline = default_pipeline_table_0
+            datapath.name = "dp12"
+            return run_3810(datapath,[simple_pipeline])
         else:
-          datapath.pipeline = empty_pipeline
+            datapath.name = "'%016x'/'%016x'" % (datapath.id,datapath.xid)
 
-        if (datapath.name):
-          print "configuring datapath: '%s'" % datapath.name
-        else:
-          print "configuring datapath: '%016x'/'%016x'" % (datapath.id,datapath.xid)
-
-        print "send table feature request"
-        print table_feature_parser((yield self.feature_req))[1]
-
-        for features in [default_pipeline,default_pipeline_table_0,fudge_pipeline,empty_pipeline,simple_pipeline]:
-            # print "send table feature reconfiguration"
-            (status,message) = table_feature_parser((yield(feature_set(features))))
-            if (not status):
-                print "failed to set table features", message
-
-        print "send table feature request again"
-        print table_feature_parser((yield self.feature_req))[1]
-
-        print "*** end of request sequence ***"
-        yield
+        return run_default(datapath)
 
     def run_generator(self, datapath):
         # this runs the generator to produce the next round of request messages, if any, and then sends them before exiting
@@ -130,18 +128,13 @@ class SimpleSwitch13(app_manager.RyuApp):
 
     @set_ev_cls(ofp_event.EventOFPTableFeaturesStatsReply, MAIN_DISPATCHER)
     def table_stats_reply_handler(self, ev):
-        print "received table features response...."
         datapath = ev.msg.datapath
         self.reply_queues[datapath].append(ev.msg)
-        print "appending response for datapath %s",datapath.name
 
-    @set_ev_cls(ofp_event.EventOFPErrorMsg,
-                [HANDSHAKE_DISPATCHER, CONFIG_DISPATCHER, MAIN_DISPATCHER])
+    @set_ev_cls(ofp_event.EventOFPErrorMsg, [HANDSHAKE_DISPATCHER, CONFIG_DISPATCHER, MAIN_DISPATCHER])
     def error_msg_handler(self, ev):
-        print "received error response...."
         datapath = ev.msg.datapath
         self.reply_queues[datapath].append(ev.msg)
-        print "appending response for datapath %s",datapath.name
 
     @set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
     def _packet_in_handler(self, ev):
