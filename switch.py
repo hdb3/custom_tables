@@ -84,15 +84,8 @@ class SimpleSwitch13(app_manager.RyuApp):
             if (not status):
                 print "failed to set table features", message
 
-
-        # print "send table feature reconfiguration #1"
-        # table_feature_parser((yield(feature_set(default_pipeline_table_0))))
-
-        # print "send table feature reconfiguration #2"
-        # table_feature_parser((yield(feature_set(default_pipeline))))
-
         print "send table feature request again"
-        table_feature_parser((yield self.feature_req))
+        print table_feature_parser((yield self.feature_req))[1]
 
         print "*** end of request sequence ***"
         yield
